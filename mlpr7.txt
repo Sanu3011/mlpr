@@ -1,0 +1,173 @@
+mlpr7 
+
+1)
+# ML Practical 7: Improving Performance of Classifier Models
+# Name: Gayatri Ganesh Kakde
+# Roll No: 3338
+
+# 1️: Import libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# 2️: Load dataset
+df = pd.read_csv("SMSSpamCollection", sep='\t', names=['label','text'])
+print("Dataset shape:", df.shape)
+df
+
+2)
+# a) Data preprocessing
+df.shape
+
+3)
+# 3)
+!pip install nltk
+
+4)
+# 4)
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+
+nltk.download('stopwords')
+nltk.download('punkt')
+
+5)
+# 5)
+
+# Initialize stopwords and stemmer
+swords = stopwords.words('english')
+ps = PorterStemmer()
+
+
+6)
+# 6)
+# Tokenization and stemming example
+
+tokens = word_tokenize('How are you friends?')
+clean_tokens = [word for word in tokens if word not in swords]
+stemmed_tokens = [ps.stem(word) for word in clean_tokens]
+print("After stopwords removal:", clean_tokens)
+print("After stemming:", stemmed_tokens)
+
+7)
+# 7️) Text cleaning function
+def clean_text(sent):
+    tokens = word_tokenize(sent)
+    clean = [word for word in tokens if word.isalpha()]  # remove numbers/punctuation
+    clean = [ps.stem(word) for word in clean if word not in swords]  # remove stopwords + stem
+    return clean
+
+8)
+# 8️) TF-IDF feature extraction
+from sklearn.feature_extraction.text import TfidfVectorizer
+tfidf = TfidfVectorizer(analyzer=clean_text)
+x = df['text']
+y = df['label']
+x_new = tfidf.fit_transform(x)
+
+9)
+# 9️) Visualize HAM vs SPAM
+plt.figure(figsize=(6,4))
+sns.countplot(x=y)
+plt.title("Count of HAM vs SPAM Messages")
+plt.xlabel("Label")
+plt.ylabel("Count")
+plt.show()
+
+10)
+# b) Train-Test Split
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test = train_test_split(x_new, y, test_size=0.25, random_state=1)
+
+11)
+# c) 1️: Naive Bayes Classifier
+from sklearn.naive_bayes import GaussianNB
+nb = GaussianNB()
+nb.fit(x_train.toarray(), y_train)
+y_pred_nb = nb.predict(x_test.toarray())
+
+
+12)
+# Confusion Matrix for Naive Bayes
+from sklearn.metrics import ConfusionMatrixDisplay, accuracy_score, classification_report
+plt.figure(figsize=(5,4))
+ConfusionMatrixDisplay.from_predictions(y_test, y_pred_nb)
+plt.title("Confusion Matrix: Naive Bayes")
+plt.show()
+print("Naive Bayes Accuracy:", accuracy_score(y_test, y_pred_nb))
+print(classification_report(y_test, y_pred_nb))
+
+13)
+# 2️: Random Forest Classifier
+from sklearn.ensemble import RandomForestClassifier
+rf = RandomForestClassifier(random_state=1)
+rf.fit(x_train, y_train)
+y_pred_rf = rf.predict(x_test)
+
+14)
+# Confusion Matrix for Random Forest
+plt.figure(figsize=(5,4))
+ConfusionMatrixDisplay.from_predictions(y_test, y_pred_rf)
+plt.title("Confusion Matrix: Random Forest")
+plt.show()
+print("Random Forest Accuracy:", accuracy_score(y_test, y_pred_rf))
+print(classification_report(y_test, y_pred_rf))
+
+15)
+# d) Cross-Validation
+from sklearn.model_selection import cross_val_score
+
+16)
+# Naive Bayes cross-validation
+nb_cv_scores = cross_val_score(nb, x_new.toarray(), y, cv=5, scoring='accuracy')
+print("Naive Bayes 5-Fold CV Accuracy:", nb_cv_scores)
+print("Naive Bayes CV Mean Accuracy:", nb_cv_scores.mean())
+
+18)
+# Random Forest cross-validation
+rf_cv_scores = cross_val_score(rf, x_new, y, cv=5, scoring='accuracy')
+print("Random Forest 5-Fold CV Accuracy:", rf_cv_scores)
+print("Random Forest CV Mean Accuracy:", rf_cv_scores.mean())
+
+19)
+# e) Hyperparameter Tuning: Random Forest
+from sklearn.model_selection import GridSearchCV
+
+param_grid = {
+    'n_estimators': [50, 100, 150],
+    'max_depth': [None, 10, 20],
+    'min_samples_split': [2, 5],
+    'min_samples_leaf': [1, 2]
+}
+
+rf_grid = GridSearchCV(RandomForestClassifier(random_state=1),
+                       param_grid,
+                       cv=3,
+                       scoring='accuracy',
+                       n_jobs=-1)
+rf_grid.fit(x_train, y_train)
+
+print("Best Hyperparameters for Random Forest:", rf_grid.best_params_)
+best_rf = rf_grid.best_estimator_
+
+20)
+# Evaluate tuned Random Forest
+y_pred_rf_tuned = best_rf.predict(x_test)
+plt.figure(figsize=(5,4))
+ConfusionMatrixDisplay.from_predictions(y_test, y_pred_rf_tuned)
+plt.title("Confusion Matrix: Tuned Random Forest")
+plt.show()
+print("Tuned Random Forest Accuracy:", accuracy_score(y_test, y_pred_rf_tuned))
+print(classification_report(y_test, y_pred_rf_tuned))
+
+21)
+# f) Comparison Summary
+print("\n=== Model Comparison ===")
+print("Naive Bayes Accuracy (Test):", accuracy_score(y_test, y_pred_nb))
+print("Random Forest Accuracy (Test):", accuracy_score(y_test, y_pred_rf))
+print("Tuned Random Forest Accuracy (Test):", accuracy_score(y_test, y_pred_rf_tuned))
+print("Naive Bayes CV Mean Accuracy:", nb_cv_scores.mean())
+print("Random Forest CV Mean Accuracy:", rf_cv_scores.mean())

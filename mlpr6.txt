@@ -1,0 +1,63 @@
+# Step 1: Import Libraries
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+
+# Step 2: Install and Import Apriori
+
+!pip install apyori
+from apyori import apriori
+
+
+# Step 3: Load Dataset
+
+data = pd.read_csv('Market_Basket_Optimisation.csv', header=None)
+data.head()
+
+
+
+# Step 4: Data Preprocessing
+
+transactions = []
+for i in range(0, 7501):
+    transactions.append([str(data.values[i,j]) for j in range(0,20) if str(data.values[i,j]) != 'nan'])
+
+
+# Step 5: Train Apriori Algorithm
+
+rules = apriori(transactions, min_support=0.003, min_confidence=0.2, min_lift=3, min_length=2)
+results = list(rules)
+
+
+# Step 6: Display Rules
+
+for item in results[:10]:
+    pair = item[0]
+    items = [x for x in pair]
+    print("Rule: " + items[0] + " -> " + items[1])
+    print("Support: " + str(item[1]))
+    print("Confidence: " + str(item[2][0][2]))
+    print("Lift: " + str(item[2][0][3]))
+    print("=====================================")
+
+    
+# Step 7: Visualization
+
+supports = [item[1] for item in results]
+confidences = [item[2][0][2] for item in results]
+plt.scatter(supports, confidences)
+plt.xlabel('Support')
+plt.ylabel('Confidence')
+plt.title('Support vs Confidence')
+plt.show()
+
+
+# Step 8: Increase Confidence
+rules_high = apriori(transactions, min_support=0.003, min_confidence=0.6, min_lift=3, min_length=2)
+results_high = list(rules_high)
+for item in results_high[:5]:
+    pair = item[0]
+    items = [x for x in pair]
+    print("Rule: " + items[0] + " -> " + items[1])
+    print("Confidence: " + str(item[2][0][2]))
